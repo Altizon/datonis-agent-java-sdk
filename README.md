@@ -1,8 +1,7 @@
 # Datonis Agent SDK - Java
 This repository contains a Java language version for developing an Agent program capable of sending data to the [**Datonis Cloud Plaform**](https://www.datonis.io).
-It can be used for developing Agents on Android as well.
-It contains a sample program that captures CPU and memory data and transmits in to Datonis.
-You can use this as a starting point and write your own application
+
+It can be used for developing Agents on Android as well. It contains a sample program that captures CPU and memory data and transmits in to Datonis. You can use this as a starting point and write your own application
 
 ## Pre-requisites
 * Java 1.7 or later
@@ -13,6 +12,7 @@ You can use this as a starting point and write your own application
 ## Downloading the repository
 
 On your computer, execute following command:
+
 git clone https://github.com/Altizon/datonis-edge-java-sdk.git
 
 
