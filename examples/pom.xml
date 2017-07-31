@@ -2,10 +2,10 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.datonis.sdk</groupId>
-  <artifactId>datonis-edge-sdk</artifactId>
+  <artifactId>datonis-edge-examples</artifactId>
   <packaging>jar</packaging>
   <version>5.0.0</version>
-  <name>datonis-edge-sdk</name>
+  <name>datonis-edge-examples</name>
   <url>http://maven.apache.org</url>
   <repositories>
     <repository>
@@ -15,29 +15,9 @@
   </repositories>
   <dependencies>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.7.12</version>
-    </dependency>
-    <dependency>
-      <groupId>com.googlecode.json-simple</groupId>
-      <artifactId>json-simple</artifactId>
-      <version>1.1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.ning</groupId>
-      <artifactId>compress-lzf</artifactId>
-      <version>1.0.3</version>
-	</dependency>
-    <dependency>
-      <groupId>org.eclipse.paho</groupId>
-      <artifactId>mqtt-client</artifactId>
-      <version>0.4.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>4.5.2</version>
+      <groupId>io.datonis.sdk</groupId>
+      <artifactId>datonis-edge-sdk</artifactId>
+      <version>4.0.0</version>
     </dependency>
   </dependencies>
   <build>

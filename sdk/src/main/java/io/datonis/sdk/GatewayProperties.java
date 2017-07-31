@@ -46,7 +46,7 @@ public final class GatewayProperties {
         try {
             loadProperties();
         } catch (Exception e) {
-            String message = "Unable to load the agent configurations file.\nPlease ensure that the aliot.properties file exists in the root or is of the correct format.\nYou can also pass a JVM parameter -Daliot.properties to point to a valid properties file"; 
+            String message = "Unable to load the agent configurations file.\nPlease ensure that the datonis-edge.properties file exists in the root or is of the correct format.\nYou can also pass a JVM parameter -Ddatonis-edge.properties to point to a valid properties file"; 
             logger.error(message, e);
             System.err.println(message);
             System.exit(-1);
@@ -55,9 +55,9 @@ public final class GatewayProperties {
 
     private static void loadProperties() throws Exception {
         JSONParser parser = new JSONParser();
-        String propertiesFilePath =  System.getProperty("aliot.properties");
+        String propertiesFilePath =  System.getProperty("datonis-edge.properties");
         if (propertiesFilePath == null) {
-            propertiesFilePath = "aliot.properties";
+            propertiesFilePath = "datonis-edge.properties";
         }
         Object obj = parser.parse(new FileReader(propertiesFilePath));
         properties = (JSONObject)obj;
