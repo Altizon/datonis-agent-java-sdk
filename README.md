@@ -13,7 +13,7 @@ You can use this as a starting point and write your own application
 ## Downloading the repository
 
 On your computer, execute following command:
-git clone https://github.com/Altizon/datonis-agent-java-sdk.git
+git clone https://github.com/Altizon/datonis-edge-java-sdk.git
 
 
 ## Building the package
