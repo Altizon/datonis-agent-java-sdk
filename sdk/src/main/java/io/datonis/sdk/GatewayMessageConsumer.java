@@ -116,7 +116,9 @@ public class GatewayMessageConsumer implements Runnable {
                                     Thread.sleep(bulkInterval);
                                 }
                             } catch (Exception e) {
-                                logger.error(Thread.currentThread().getName() + " hit an exception", e);
+                                if (!agent.isShutdown()) {
+                                    logger.error(Thread.currentThread().getName() + " hit an exception", e);
+                                }
                             }
                         }
                     });

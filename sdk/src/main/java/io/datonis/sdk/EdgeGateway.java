@@ -237,7 +237,7 @@ public class EdgeGateway {
                 // Ignore
             }
         }
-        logger.info("Successfully started the Aliot Gateway");
+        logger.info("Successfully started the Datonis Edge Gateway");
     }
 
     public boolean addThing(Thing thing) {
@@ -415,7 +415,7 @@ public class EdgeGateway {
         queueFactory.shutdownCallback(dataQueue);
         queueFactory.shutdownCallback(alertQueue);
         communicator.shutdown();
-        logger.info("Aliot Gateway has shut down");
+        logger.info("Datonis Edge Gateway has shut down");
     }
 
     public synchronized void setInstructionHandler(InstructionHandler handler) {
