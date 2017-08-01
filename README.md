@@ -24,7 +24,7 @@ The agent needs to be configured first before you build the package. There are a
 3. Create a Thing called **LivingRoom** using the **Room** as your template. Make a note of the Thing key that is generated for this thing
 4. Download the key pair with associated role as **Agent** from the KeyPairs section
 5. Edit the datonis-edge.properties file in examples/src/main/resources and replace the access key/secret key pair obtained from the downloaded file (from step 4)
-6. Edit the SampleAgent.java file in examples/src/main/java/io/datonis/examples and replace the Thing key (obtained in step 3)
+6. Edit the SampleAgent.java file in examples/src/main/java/io/datonis/examples and replace the Thing key (obtained in step 3) in **startGateway()** function
 
 ## Building the package
 
