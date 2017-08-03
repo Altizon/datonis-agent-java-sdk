@@ -121,6 +121,10 @@ public class EdgeUtil {
         return datonisBaseUrl + "/api/v2/sensor_alerts/" + alertKey;
 	}
 	
+    public static String getRuleNotificationUrl(String datonisBaseUrl) {
+        return datonisBaseUrl + "/api/v3/things/rule_notification";
+    }
+	
 	public static String getMqttDataTopic(String clientId) {
 	    return "Altizon/Datonis/" + clientId + "/event";
 	}
@@ -160,4 +164,8 @@ public class EdgeUtil {
 	public static String getMqttAlertTopic(String clientId) {
 	    return "Altizon/Datonis/" + clientId + "/alert";
 	}
+ 
+	public static String getMqttRuleNotificationTopic(String clientId) {
+        return "Altizon/Datonis/" + clientId + "/rule_notification";
+    }
 }

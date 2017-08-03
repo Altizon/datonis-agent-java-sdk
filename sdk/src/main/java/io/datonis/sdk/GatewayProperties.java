@@ -29,6 +29,7 @@ public final class GatewayProperties {
     protected static final String METADATA = "metadata";
     protected static final String SIMULATE = "simulate";
     protected static final String THREAD_POOL_SIZE = "thread_pool_size";
+    protected static final String CONCURRENCY = "concurrency";
     protected static final String BULK_TRANSMIT_INTERVAL = "bulk_transmit_interval";
     protected static final String BULK_MAX_ELEMENTS = "bulk_max_elements";
     protected static final String BULK_TRANSMIT = "bulk_transmit";
@@ -76,6 +77,11 @@ public final class GatewayProperties {
 
         if (!properties.containsKey(THREAD_POOL_SIZE))
             properties.put(THREAD_POOL_SIZE, (long)5);
+        
+        // If someone used the new concurrency configuration
+        if (properties.containsKey(CONCURRENCY)) {
+            properties.put(THREAD_POOL_SIZE, properties.get(CONCURRENCY));
+        }
 
         if (!properties.containsKey(BULK_TRANSMIT_INTERVAL))
             properties.put(BULK_TRANSMIT_INTERVAL, (long)60000);

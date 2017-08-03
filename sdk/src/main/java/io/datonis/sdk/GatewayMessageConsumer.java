@@ -65,10 +65,7 @@ public class GatewayMessageConsumer implements Runnable {
         boolean run = true;
         final AtomicInteger threadNumber = new AtomicInteger();
         int poolSize = this.threadPoolSize;
-        if (communicator instanceof MQTTCommunicator) {
-            poolSize = 1;
-        }
-        executorService = Executors.newFixedThreadPool(poolSize, new ThreadFactory() {
+        executorService = Executors.newFixedThreadPool((communicator instanceof MQTTCommunicator) ? 1 : poolSize, new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 return new Thread(r, currentThreadName + "-pool-thread-" + threadNumber.incrementAndGet());
@@ -90,38 +87,40 @@ public class GatewayMessageConsumer implements Runnable {
                     
                     //logger.info("Consumer thread sleeping");
                     //Thread.sleep(10000);
-                    final Message message = getNextMessage(queue);
-                    executorService.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                while (!communicator.isConnected()) {
-                                    logger.info("Waiting for communicator to connect to the Datonis Server");
-                                    Thread.sleep(50000);
-                                }
-                                logger.debug("Attempting to transmit next message");
-                                long t1 = System.currentTimeMillis();
-                                int transmitted = communicator.transmit(message);
-                                logger.debug("Returned from communicator transmit");
-                                if (transmitted == EdgeCommunicator.OK) {
-                                    logger.debug("Before firing success callback");
-    								fireSuccessfulMessageEvent(message);
-    								logger.info("Transmitted Message in " + (System.currentTimeMillis() - t1) + " ms : " + message.toJSON(true));
-                                } else {
-    								fireFailedMessageEvent(message, transmitted);
-                                    logger.warn("Failed to transmit message: " + message.toJSON(true) + ", Error: " +  EdgeUtil.getMappedErrorMessage(transmitted) + " [Code: " + transmitted + "]" );
-                                }
-                                if (bulkInterval != null) {
-                                    logger.info("Thread sleeping for: " + bulkInterval + " ms due to bulk transmit configuration");
-                                    Thread.sleep(bulkInterval);
-                                }
-                            } catch (Exception e) {
-                                if (!agent.isShutdown()) {
-                                    logger.error(Thread.currentThread().getName() + " hit an exception", e);
+                    for (int i = 0; i < poolSize; i++) {
+                        final Message message = getNextMessage(queue);
+                        executorService.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    while (!communicator.isConnected()) {
+                                        logger.info("Waiting for communicator to connect to the Datonis Server");
+                                        Thread.sleep(50000);
+                                    }
+                                    logger.debug("Attempting to transmit next message");
+                                    long t1 = System.currentTimeMillis();
+                                    int transmitted = communicator.transmit(message);
+                                    logger.debug("Returned from communicator transmit");
+                                    if (transmitted == EdgeCommunicator.OK) {
+                                        logger.debug("Before firing success callback");
+        								fireSuccessfulMessageEvent(message);
+        								logger.info("Transmitted Message in " + (System.currentTimeMillis() - t1) + " ms : " + message.toJSON(true));
+                                    } else {
+        								fireFailedMessageEvent(message, transmitted);
+                                        logger.warn("Failed to transmit message: " + message.toJSON(true) + ", Error: " +  EdgeUtil.getMappedErrorMessage(transmitted) + " [Code: " + transmitted + "]" );
+                                    }
+                                } catch (Exception e) {
+                                    if (!agent.isShutdown()) {
+                                        logger.error(Thread.currentThread().getName() + " hit an exception", e);
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
+                    if (bulkInterval != null) {
+                        logger.info("Thread sleeping for: " + bulkInterval + " ms due to bulk transmit configuration");
+                        Thread.sleep(bulkInterval);
+                    }
                 } else {
                     logger.info("The agent is not registered. Messages will not be transmitted. Will check again in 15 seconds");
                     Thread.sleep(15000);
