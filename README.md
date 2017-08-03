@@ -48,3 +48,13 @@ java -Dlog4j.properties=src/main/resources/log4j.properties -Ddatonis-edge.prope
 2. Click on the Things workspace
 3. Select the Living Room thing and click the 'Data' button associated with it in the 'Actions' column
 
+## Some useful configuration options in datonis-edge.properties
+
+| Parameter   | Description | Possible Values  | Default Value  |
+|---|---|---|---|
+| protocol  | Protocol to use for connecting to Datonis  | http, https, mqtt, mqtts  | https  |
+| bulk_transmit | Whether to batch and bulk transmit packets | true, false  | true  |
+| bulk_transmit_interval  | Interval between two successive bulk requests in milliseconds | > 5000  | 60000 (1 minute)  |
+| bulk_max_elements  | Maximum number of elements to put into a bulk packet | > 10  | 25 |
+| concurrency  | Number of concurrent requests | >= 1  | 5 |
+| request_timeout  | Timeout for socket connection | > 60000  | 180000 (3 minutes) |
