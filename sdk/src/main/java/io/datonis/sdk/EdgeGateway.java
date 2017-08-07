@@ -141,13 +141,11 @@ public class EdgeGateway {
         communicator = createCommunicator();
         communicator.connect();
         
-        // Now that you do not have to explicitly mention if a thing is bi-directional or not,
-        // We always need a thing to be registered with it's bi-directional status based on protocol used.
-        /*
-        if ((register == null || register == false) && !isBidirectionalGateway) {
+        // No register unless explicitly asked for
+        if (register == null || register == false) {
             registered = true;
         }
-        */
+
         if (isBidirectionalGateway) {
             instructionQueue = new LinkedBlockingQueue<>();
             Thread t = new Thread(new Runnable() {
@@ -301,9 +299,6 @@ public class EdgeGateway {
     private <T> boolean transmit(Thing thing, T message, BlockingQueue<T> queue) throws IllegalThingException {
         if (thing == null)
             return false;
-
-        if (!things.containsKey(thing.getKey()))
-            throw new IllegalThingException(thing, "The thing needs to be registered first");
 
         try {
             queue.put(message);

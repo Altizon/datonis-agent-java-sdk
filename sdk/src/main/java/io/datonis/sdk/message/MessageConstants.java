@@ -33,4 +33,5 @@ public class MessageConstants {
     public static final String MESSAGE = "message";
     public static final String COMPRESSED = "compressed";
     public static final String PROTOCOL_VERSION = "aliot_protocol_version";
+    public static final String ALIOT_PROTOCOL_VERSION = "aliot_protocol_version";
 }

@@ -58,7 +58,10 @@ public final class GatewayProperties {
         JSONParser parser = new JSONParser();
         String propertiesFilePath =  System.getProperty("datonis-edge.properties");
         if (propertiesFilePath == null) {
-            propertiesFilePath = "datonis-edge.properties";
+            propertiesFilePath =  System.getProperty("aliot.properties");
+            if (propertiesFilePath == null) {
+                propertiesFilePath = "datonis-edge.properties";
+            }
         }
         Object obj = parser.parse(new FileReader(propertiesFilePath));
         properties = (JSONObject)obj;
