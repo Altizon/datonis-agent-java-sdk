@@ -13,7 +13,7 @@ It can be used for developing Agents on Android as well. It contains a sample pr
 
 On your computer, execute following command:
 
-git clone https://github.com/Altizon/datonis-edge-java-sdk.git
+git clone https://github.com/Altizon/datonis-edge-sdk-java.git
 
 ## Configuring the Agent
 
