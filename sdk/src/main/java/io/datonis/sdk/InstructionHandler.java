@@ -29,7 +29,7 @@ public abstract class InstructionHandler {
         if (gateway instanceof AliotGateway) {
             handleInstruction((AliotGateway)gateway, new AliotInstruction(instruction));
         } else {
-            logger.info("Instruction received: " + instruction.toJSON().toJSONString());
+            logger.info("Instruction received: " + instruction.getInstruction().toJSONString());
             logger.info("Please override 'handleInstructionExecution' method for handling");
         }
     }
@@ -44,7 +44,7 @@ public abstract class InstructionHandler {
      * @param instruction
      */
     public void handleInstruction(AliotGateway gateway, AliotInstruction instruction) {
-        logger.info("Instruction received: " + instruction.toJSON().toJSONString());
+        logger.info("Instruction received: " + instruction.getInstruction().toJSONString());
         logger.info("Please override 'handleInstructionExecution' method");
     }
 }
