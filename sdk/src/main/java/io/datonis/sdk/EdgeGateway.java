@@ -157,7 +157,7 @@ public class EdgeGateway {
                         try {
                             instruction = instructionQueue.take();
                             if (instruction != null && instructionHandler != null) {
-                                instructionHandler.handleInstruction(EdgeGateway.this, instruction);
+                                instructionHandler.handleInstructionExecution(EdgeGateway.this, instruction);
                             }
                         } catch (InterruptedException e) {
                             if (EdgeGateway.this.isShutdown()) {
@@ -421,7 +421,10 @@ public class EdgeGateway {
     }
 
     public synchronized void setInstructionHandler(InstructionHandler handler) {
-        this.instructionHandler = handler;
+        if (this.isBidirectionalGateway) {
+            logger.info("Setting up instruction handler for bi-directional communication");
+            this.instructionHandler = handler;
+        }
     }
 
     public void messageTransmitted(Message message) {

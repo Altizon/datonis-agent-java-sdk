@@ -5,6 +5,8 @@ import io.datonis.sdk.EdgeGateway;
 import io.datonis.sdk.EdgeUtil;
 import io.datonis.sdk.compress.lzf.LZF;
 import io.datonis.sdk.message.AlertMessage;
+import io.datonis.sdk.message.BulkDataMessage;
+import io.datonis.sdk.message.DataMessage;
 import io.datonis.sdk.message.Instruction;
 import io.datonis.sdk.message.Message;
 import io.datonis.sdk.message.MessageConstants;
@@ -65,6 +67,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
     private Map<Integer, Integer> qosMap;
     private Map<Integer, String> topicMap;
     private Map<String, Set<String>> thingKeys;
+    private Set<String> subscribedForInstructions;
     private String broker;
     private MqttClient mqttClient;
     private ConcurrentHashMap<String, JSONObject> acks = new ConcurrentHashMap<>();
@@ -87,6 +90,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         }
         this.broker = this.broker + ":" + port.intValue();
         this.thingKeys = new ConcurrentHashMap<>();
+        this.subscribedForInstructions = Collections.synchronizedSet(new HashSet<String>());
         // MQTT does not support keys more than 22 characters
         this.clientId = UUID.randomUUID().toString().substring(0, 22);
         this.timeout = timeout;
@@ -288,10 +292,12 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
             logger.error("Connection to Datonis MQTT server is lost. Attempting to connect again...");
             retval = connect();
             if (retval == OK) {
+                subscribedForInstructions.clear();
                 for (Entry<String, Set<String>> entry : thingKeys.entrySet()) {
                     for (String thingKey : entry.getValue()) {
                         try {
                             subscribeForThingInstructions(entry.getKey(), thingKey);
+                            subscribedForInstructions.add(thingKey);
                         } catch (MqttException e) {
                             logger.error("Could not subscribe to Datonis MQTT server to receive instructions for thing: " + thingKey + " : " + e.getMessage(), e);
                         }
@@ -331,6 +337,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
     private void subscribeForThingInstructions(String accessKey, String thingKey) throws MqttException {
         String topic = EdgeUtil.getMqttInstructionTopic(accessKey, thingKey);
         // Setting QOS for instructions to 2 so that they are most reliable.
+        logger.info("Subscribing on instructions for thing: " + thingKey);
         mqttClient.subscribe(topic, 2);
     }
 
@@ -438,32 +445,41 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
             logger.error("Could not re-parse instruction. It will not be processed: " + e.getMessage(), e);
         }
     }
+    
+    private void checkForInstructionSubscription(String thingKey, Message msg) {
+        if (!subscribedForInstructions.contains(thingKey)) {
+            try {
+                String accessKey = (msg.getAccessKey() == null) ? this.gateway.getAccessKey() : msg.getAccessKey();
+                subscribeForThingInstructions(accessKey, thingKey);
+                Set<String> set = thingKeys.get(accessKey);
+                if (set == null) {
+                    set = Collections.synchronizedSet(new HashSet<String>());
+                    thingKeys.put(accessKey, set);
+                }
+                set.add(thingKey);
+                subscribedForInstructions.add(thingKey);
+            } catch (MqttException e) {
+                logger.error("Could not subscribe for instructions for Thing key: "  + thingKey, e);
+                logger.error("Instructions will not for Thing key: "  + thingKey);
+            }
+        }
+    }
 
     @Override
     public int transmit(Message msg) {
         switch (msg.getType()) {
             case Message.DATA:
+                checkForInstructionSubscription(((DataMessage)msg).getThingKey(), msg);
+                return encodeAndTransmit(DATA_PACKET, msg, /* TODO: compress only if required */false);
             case Message.BULKDATA:
-                return encodeAndTransmit(DATA_PACKET, msg, /*
-                                                            * TODO: compress
-                                                            * only if required
-                                                            */false);
-            case Message.THING_REGISTER:
-                String thingKey = ((RegisterMessage)msg).getThing().getKey();
-                try {
-                    String accessKey = (msg.getAccessKey() == null) ? this.gateway.getAccessKey() : msg.getAccessKey();
-                    subscribeForThingInstructions(accessKey, thingKey);
-                    Set<String> set = thingKeys.get(accessKey);
-                    if (set == null) {
-                        set = Collections.synchronizedSet(new HashSet<String>());
-                        thingKeys.put(accessKey, set);
-                    }
-                    set.add(thingKey);
-                    return encodeAndTransmit(REGISTER, msg, false);
-                } catch (MqttException e) {
-                    logger.error("Could not subscribe for instructions for Thing key: "  + thingKey, e);
-                    return EdgeCommunicator.FAILED;
+                BulkDataMessage bulk = (BulkDataMessage) msg;
+                for (DataMessage dm : bulk.getMessages()) {
+                    checkForInstructionSubscription(dm.getThingKey(), dm);
                 }
+                return encodeAndTransmit(DATA_PACKET, msg, /* TODO: compress only if required */false);
+            case Message.THING_REGISTER:
+                checkForInstructionSubscription(((RegisterMessage)msg).getThing().getKey(), msg);
+                return encodeAndTransmit(REGISTER, msg, false);
             case Message.THING_HEARTBEAT:
                 return encodeAndTransmit(HEART_BEAT, msg, false);
             case Message.ALERT:

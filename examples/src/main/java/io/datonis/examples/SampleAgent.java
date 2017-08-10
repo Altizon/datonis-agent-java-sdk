@@ -1,6 +1,7 @@
 package io.datonis.examples;
 
 import io.datonis.sdk.EdgeGateway;
+import io.datonis.sdk.GatewayProperties;
 import io.datonis.sdk.InstructionHandler;
 import io.datonis.sdk.Thing;
 import io.datonis.sdk.exception.IllegalThingException;
@@ -52,10 +53,11 @@ public class SampleAgent
             return;
         }
 
-        logger.info("Agent started Successfully, setting up bidirectional communication");
+        logger.info("Agent started Successfully");
 
         // Setup bidirectional communication - Needs to use MQTTS/MQTT mode for communication.
         // Ensure that the 'protocol' property is set to 'mqtts' in the datonis-edge.properties file
+        // If you call this when 'protocol' is 'http' or 'https', it will be a no-op
         agent.setupBiDirectionalCommunication();
 
         // Send a few sample simulated data events
@@ -107,7 +109,7 @@ public class SampleAgent
         gateway.setInstructionHandler(new InstructionHandler() {
 
             @Override
-            public void handleInstruction(EdgeGateway gateway, Instruction instruction)
+            public void handleInstructionExecution(EdgeGateway gateway, Instruction instruction)
             {
 
                 logger.info("Received instruction for thing: " + instruction.getThingKey() + " from Datonis: " + instruction.getInstruction().toJSONString());

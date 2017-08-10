@@ -15,4 +15,8 @@ public class AliotInstruction extends Instruction {
     public AliotInstruction(long timestamp, String alertKey, String thingKey, JSONObject instruction) {
         super(timestamp, alertKey, thingKey, instruction);
     }
+    
+    public AliotInstruction(Instruction i) {
+        super(i.getTimestamp(), i.getAlertKey(), i.getThingKey(), i.getInstruction());
+    }
 }
