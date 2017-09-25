@@ -5,17 +5,23 @@ import io.datonis.sdk.communicator.EdgeCommunicator;
 import io.datonis.sdk.communicator.MQTTCommunicator;
 import io.datonis.sdk.communicator.RESTCommunicator;
 import io.datonis.sdk.communicator.SimulateCommunicator;
+import io.datonis.sdk.exception.EdgeGatewayException;
 import io.datonis.sdk.exception.IllegalThingException;
 import io.datonis.sdk.message.AlertMessage;
 import io.datonis.sdk.message.AlertType;
-import io.datonis.sdk.message.Instruction;
 import io.datonis.sdk.message.BulkDataMessage;
 import io.datonis.sdk.message.BulkHeartbeatMessage;
 import io.datonis.sdk.message.DataMessage;
 import io.datonis.sdk.message.HeartbeatMessage;
+import io.datonis.sdk.message.Instruction;
 import io.datonis.sdk.message.Message;
 import io.datonis.sdk.message.RegisterMessage;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,10 +33,34 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.NTCredentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.ProxyAuthenticationStrategy;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
+import com.jcraft.jsch.SftpProgressMonitor;
 
 /**
  * Gateway Interface to send data to the Datonis Platform
@@ -57,6 +87,15 @@ public class EdgeGateway {
     private volatile boolean connected;
     private boolean isBidirectionalGateway;
     private Boolean isAliasMode;
+    private Long timeout = 180* 1000L;
+    private String apiHost;
+    private String protocol;
+    private Long port;
+    private String proxyHost;
+    private Long proxyPort;
+    private String proxyUsername;
+    private String proxyPassword;
+    private String proxyDomain;
 
     public EdgeGateway() {
         this(new QueueFactory());
@@ -79,7 +118,7 @@ public class EdgeGateway {
     }
 
     private EdgeCommunicator createCommunicator() {
-        Long timeout = (Long) GatewayProperties.getValue(GatewayProperties.TIMEOUT);
+        timeout = (Long) GatewayProperties.getValue(GatewayProperties.TIMEOUT);
         if (timeout == null) {
             timeout = 180 * 1000L;
         }
@@ -89,19 +128,19 @@ public class EdgeGateway {
         if (simulate.equals(Boolean.TRUE)) {
             return new SimulateCommunicator();
         }
-        String apiHost = (String) GatewayProperties.getValue(GatewayProperties.API_HOST);
-        String protocol = (String) GatewayProperties.getValue(GatewayProperties.PROTOCOL);
-        Long port = (Long) GatewayProperties.getValue(GatewayProperties.PORT);
+        apiHost = (String) GatewayProperties.getValue(GatewayProperties.API_HOST);
+        protocol = (String) GatewayProperties.getValue(GatewayProperties.PROTOCOL);
+        port = (Long) GatewayProperties.getValue(GatewayProperties.PORT);
         
-        String proxyHost = (String) GatewayProperties.getValue(GatewayProperties.PROXY_HOST);
-        Long proxyPort = (Long) GatewayProperties.getValue(GatewayProperties.PROXY_PORT);
-        String username = (String) GatewayProperties.getValue(GatewayProperties.PROXY_USERNAME);
-        String password = (String) GatewayProperties.getValue(GatewayProperties.PROXY_PASSWORD);
-        String domain = (String) GatewayProperties.getValue(GatewayProperties.PROXY_DOMAIN);
+        proxyHost = (String) GatewayProperties.getValue(GatewayProperties.PROXY_HOST);
+        proxyPort = (Long) GatewayProperties.getValue(GatewayProperties.PROXY_PORT);
+        proxyUsername = (String) GatewayProperties.getValue(GatewayProperties.PROXY_USERNAME);
+        proxyPassword = (String) GatewayProperties.getValue(GatewayProperties.PROXY_PASSWORD);
+        proxyDomain = (String) GatewayProperties.getValue(GatewayProperties.PROXY_DOMAIN);
         if (protocol == null || "HTTP".equalsIgnoreCase(protocol)) {
-            return new RESTCommunicator(this, timeout.intValue(), apiHost, false, port, proxyHost, proxyPort, username, password, domain);
+            return new RESTCommunicator(this, timeout.intValue(), apiHost, false, port, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyDomain);
         } else if ("HTTPS".equalsIgnoreCase(protocol)) {
-            return new RESTCommunicator(this, timeout.intValue(), apiHost, true, port, proxyHost, proxyPort, username, password, domain);
+            return new RESTCommunicator(this, timeout.intValue(), apiHost, true, port, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyDomain);
         } else if ("MQTT".equalsIgnoreCase(protocol)) {
             isBidirectionalGateway = true;
             return new MQTTCommunicator(this, timeout.intValue(), apiHost, false, port);
@@ -499,6 +538,153 @@ public class EdgeGateway {
                 break;
             default:
                 logger.warn("Message cannot be handled, ignoring it: " + message.toJSON());
+        }
+    }
+
+    private String getConfiguration(String name) throws EdgeGatewayException {
+        String s = (String) GatewayProperties.getValue(name);
+        if (s == null || s.trim().length() == 0) {
+            throw new EdgeGatewayException("Input " + name + " needs to be specified in the gateway properties file");
+        }
+        return s;
+    }
+
+    public void downloadFileUsingSftp(String sourcePath, String destPath) throws EdgeGatewayException {
+        String host = "unknown";
+        Session session = null;
+        Channel channel = null;
+        try {
+            JSch jsch = new JSch();
+            String username = getConfiguration(GatewayProperties.SSH_USERNAME);
+            String knownHostsPath = getConfiguration(GatewayProperties.SSH_KNOWN_HOSTS);
+            String privateKeyPath = getConfiguration(GatewayProperties.SSH_PRIVATE_KEY);
+            host = getConfiguration(GatewayProperties.SSH_HOST);
+            Long port = (Long)GatewayProperties.getValue(GatewayProperties.SSH_PORT);
+            jsch.addIdentity(privateKeyPath);
+            if (port != null) {
+                session = jsch.getSession(username, host, port.intValue());
+            } else {
+                session = jsch.getSession(username, host);
+            }
+            jsch.setKnownHosts(knownHostsPath);
+
+            session.connect();
+            channel = session.openChannel("sftp");
+            channel.connect();
+            ChannelSftp sftp = (ChannelSftp)channel;
+            String newSourcePath = "FILE_STORAGE" + sourcePath;
+            sftp.get(newSourcePath, destPath, new SftpProgressMonitor() {
+                private double max;
+                private double soFar = 0;
+
+                @Override
+                public void init(int op, String src, String dest, long max) {
+                    logger.info("Starting download using SFTP " + src + " -> " + dest + " total: " + max);
+                    this.max = max;
+                }
+
+                @Override
+                public void end() {
+                    logger.info("Finished download");
+                }
+
+                @Override
+                public boolean count(long bytes) {
+                    long prevPercent = Math.round(100.0 * soFar / max);
+                    soFar += bytes;
+                    long newPercent = Math.round(100.0 * soFar / max);
+
+                    if (newPercent != prevPercent) {
+                        logger.info("Download progress: " + newPercent + " %");
+                    }
+
+                    return(true);
+                }
+            });
+        } catch (JSchException e) {
+            logger.error("Could not initiate SFTP session with host: " + host, e);
+            throw new EdgeGatewayException("Could not initialize SFTP session with host: " + host, e);
+        } catch (SftpException e) {
+            logger.error("Could not download file " + sourcePath + " to destination: " + destPath, e);
+            throw new EdgeGatewayException("Could not download file " + sourcePath + " to destination: " + destPath, e);
+        } finally {
+            try {
+                if (channel != null) {
+                    channel.disconnect();
+                }
+                if (session != null) {
+                    session.disconnect();
+                }
+            } catch (Exception e) {
+                logger.warn("Error while disconnecting SFTP client.", e);
+            }
+        }
+    }
+
+    public void downloadFileUsingHttp(String sourcePath, String destPath) throws EdgeGatewayException {
+        File f = new File(sourcePath);
+        try {
+            logger.info("Starting download using http " + sourcePath + " -> " + destPath);
+            HttpClientBuilder clientBuilder = HttpClientBuilder.create();
+            clientBuilder.useSystemProperties();
+            Long timeout = 300 * 1000L;
+            RequestConfig config = RequestConfig.copy(RequestConfig.DEFAULT).setSocketTimeout(timeout.intValue()).setConnectTimeout(timeout.intValue())/*.setConnectionRequestTimeout(timeout)*/.build();
+            clientBuilder.setDefaultRequestConfig(config);
+            if ((proxyHost != null) && (proxyPort != null)) {
+                if (proxyUsername != null & proxyPassword != null) {
+                    CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                    Credentials creds = null;
+                    if (proxyDomain != null) {
+                        String hostname = null;
+                        try {
+                            hostname = InetAddress.getLocalHost().getHostName();
+                        } catch (Exception e) {
+                            logger.warn("Could not get hostname", e);
+                        }
+                        creds = new NTCredentials(proxyUsername, proxyPassword, hostname, proxyDomain);
+                    } else {
+                        creds = new UsernamePasswordCredentials(proxyUsername, proxyPassword);
+                    }
+                    credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort.intValue()), creds);
+                    clientBuilder.setDefaultCredentialsProvider(credsProvider);
+                }
+                clientBuilder.setProxy(new HttpHost(proxyHost, proxyPort.intValue()));
+                clientBuilder.setProxyAuthenticationStrategy(new ProxyAuthenticationStrategy());
+            }
+            CloseableHttpClient httpClient = clientBuilder.build();
+            URIBuilder builder = new URIBuilder();
+
+            builder.setScheme("https").setHost(apiHost).setPath(EdgeUtil.getDownloadFileUrl("")).setParameter("path", f.getParent())
+                .setParameter("file_name", f.getName());
+            URI uri = builder.build();
+            HttpGet request = new HttpGet(uri);
+            request.setHeader("X-Access-Key", accessKey);
+            CloseableHttpResponse response = httpClient.execute(request);
+            int code = response.getStatusLine().getStatusCode();
+            if (code != 200) {
+                JSONParser parser = new JSONParser();
+                JSONObject j = (JSONObject) parser.parse(new InputStreamReader(response.getEntity().getContent()));
+                JSONArray a = (JSONArray)j.get("errors");
+                JSONObject error = (JSONObject)a.get(0);
+                String datonisCode = (String)error.get("code");
+                String datonisMessage = (String)error.get("message");
+                logger.error("Could not download file: " + sourcePath + ", response code: " + code + ", server code: " + datonisCode + ", server message: " + datonisMessage);
+                throw new EdgeGatewayException("Could not download file: " + sourcePath + ", response code: " + code + ", server code: " + datonisCode + ", server message: " + datonisMessage);
+            } else {
+                FileOutputStream o = new FileOutputStream(destPath + "/" + f.getName());
+                try {
+                    HttpEntity entity = response.getEntity();
+                    if (entity != null) {
+                        entity.writeTo(o);
+                        logger.info("Finished download");
+                    }
+                } finally {
+                    o.close();
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Could not download file: " + sourcePath, e);
+            throw new EdgeGatewayException("Could not download file " + sourcePath, e);
         }
     }
 }

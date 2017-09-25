@@ -1,7 +1,6 @@
 package io.datonis.examples;
 
 import io.datonis.sdk.EdgeGateway;
-import io.datonis.sdk.GatewayProperties;
 import io.datonis.sdk.InstructionHandler;
 import io.datonis.sdk.Thing;
 import io.datonis.sdk.exception.IllegalThingException;

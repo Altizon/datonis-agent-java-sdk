@@ -41,6 +41,12 @@ public final class GatewayProperties {
     protected static final String PROXY_PASSWORD = "proxy_password";
     protected static final String PROXY_DOMAIN = "proxy_domain";
 
+    protected static final String SSH_KNOWN_HOSTS = "ssh_known_hosts_path";
+    protected static final String SSH_PRIVATE_KEY = "ssh_private_key_path";
+    protected static final String SSH_HOST = "ssh_host";
+    protected static final String SSH_PORT = "ssh_port";
+    protected static final String SSH_USERNAME = "ssh_username";
+
     private static JSONObject properties;
 
     static {
