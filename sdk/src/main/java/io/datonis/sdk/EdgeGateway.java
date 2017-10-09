@@ -31,7 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -81,6 +85,7 @@ public class EdgeGateway {
     private QueueFactory queueFactory;
     private Map<String, Thing> things = new ConcurrentHashMap<>();
     private List<Thread> threads = Collections.synchronizedList(new ArrayList<Thread>());
+    private ExecutorService instructionPool;
     private EdgeCommunicator communicator;
     private volatile boolean shutdown;
     private volatile boolean registered;
@@ -186,27 +191,45 @@ public class EdgeGateway {
         }
 
         if (isBidirectionalGateway) {
+            Long instructionPoolSize = (Long) GatewayProperties.getValue(GatewayProperties.INSTRUCTION_POOL_SIZE);
+            instructionPool = Executors.newFixedThreadPool(instructionPoolSize.intValue(), new ThreadFactory() {
+                private AtomicInteger i = new AtomicInteger();
+
+                @Override
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, "Instruction-Handler-" + i.incrementAndGet());
+                }
+            });
             instructionQueue = new LinkedBlockingQueue<>();
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     boolean done = false;
                     while (!done) {
-                        Instruction instruction = null;
                         try {
-                            instruction = instructionQueue.take();
+                            final Instruction instruction = instructionQueue.take();
                             if (instruction != null && instructionHandler != null) {
-                                instructionHandler.handleInstructionExecution(EdgeGateway.this, instruction);
+                                instructionPool.submit(new Runnable() {
+
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            instructionHandler.handleInstructionExecution(EdgeGateway.this, instruction);
+                                        } catch (Exception e) {
+                                            logger.error("Unhandled exception while executing instruction", e);
+                                        }
+                                    }
+                                });
                             }
                         } catch (InterruptedException e) {
                             if (EdgeGateway.this.isShutdown()) {
                                 done = true;
-                                logger.info("Instruction handling thread shutting down");
+                                logger.info("Instruction handling main thread shutting down");
                             }
                         }
                     }
                 }
-            }, "Instruction-Handler");
+            }, "Main-Instruction-Handler");
             t.start();
             threads.add(t);
         }

@@ -30,6 +30,7 @@ public final class GatewayProperties {
     protected static final String SIMULATE = "simulate";
     protected static final String THREAD_POOL_SIZE = "thread_pool_size";
     protected static final String CONCURRENCY = "concurrency";
+    protected static final String INSTRUCTION_POOL_SIZE = "instruction_pool_size";
     protected static final String BULK_TRANSMIT_INTERVAL = "bulk_transmit_interval";
     protected static final String BULK_MAX_ELEMENTS = "bulk_max_elements";
     protected static final String BULK_TRANSMIT = "bulk_transmit";
@@ -106,6 +107,9 @@ public final class GatewayProperties {
         if (!properties.containsKey(PROTOCOL))
             properties.put(PROTOCOL, "https");
 
+        if (!properties.containsKey(INSTRUCTION_POOL_SIZE)) {
+            properties.put(INSTRUCTION_POOL_SIZE, (long)5);
+        }
     }
 
     public static Object getValue(String key) {
