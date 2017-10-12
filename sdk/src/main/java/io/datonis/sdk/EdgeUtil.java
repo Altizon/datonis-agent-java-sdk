@@ -126,7 +126,7 @@ public class EdgeUtil {
     }
     
     public static String getRegisterGatewayUrl(String datonisBaseUrl) {
-    	return datonisBaseUrl + "/api/v3/gateway/register_gateway";
+    	return datonisBaseUrl + "/api/v3/gateway/register";
     }
 	
 	public static String getMqttDataTopic(String clientId) {
