@@ -3,6 +3,7 @@ package io.datonis.examples;
 import io.datonis.sdk.EdgeGateway;
 import io.datonis.sdk.InstructionHandler;
 import io.datonis.sdk.Thing;
+import io.datonis.sdk.exception.EdgeGatewayException;
 import io.datonis.sdk.exception.IllegalThingException;
 import io.datonis.sdk.message.AlertType;
 import io.datonis.sdk.message.Instruction;
@@ -16,11 +17,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A sample program that sends events to Datonis
+ * Also showcases executing instructions for file download
  * 
- * @author Ranjit Nair (ranjit@altizon.com)
  * @author Rajesh Jangam (rajesh_jangam@altizon.com)
  */
-public class SampleAgent
+public class SampleAgentWithDownload
 {
     private static final Logger logger = LoggerFactory.getLogger(SampleAgent.class);
     private static int NUM_EVENTS = 5;
@@ -28,7 +29,7 @@ public class SampleAgent
     private Thing thing;
     private EdgeGateway gateway;
 
-    private SampleAgent()
+    private SampleAgentWithDownload()
     {
         // The EdgeGateway class is the main class for sending data to Datonis. Create an instance and store it for
         // future use.
@@ -41,9 +42,9 @@ public class SampleAgent
         // A sample file should be available with this package
         // The keys are available in the Datonis platform portal
 
-        logger.info("Starting the Sample Datonis Agent");
+        logger.info("Starting the Sample Datonis Agent (Download example)");
         // Create and Initialize the agent
-        SampleAgent agent = new SampleAgent();
+        SampleAgentWithDownload agent = new SampleAgentWithDownload();
 
         // Start the Gateway
         if (!agent.startGateway())
@@ -114,19 +115,31 @@ public class SampleAgent
                 logger.info("Received instruction for thing: " + instruction.getThingKey() + " from Datonis: " + instruction.getInstruction().toJSONString());
                 // The instruction.getInstruction() call gives details of the passed instruction. You can now take the
                 // appropriate action based on that instruction. `
-
-                JSONObject data = new JSONObject();
-                // When the instruction is successfully executed, you should send an execution status of success back to
-                // the platform. You can also put additional parameters in there which provides additional context about
-                // the instruction executed.
-                data.put("execution_status", "success");
-                if (!gateway.transmitAlert(instruction.getAlertKey(), instruction.getThingKey(), AlertType.WARNING, "Demo warning, instruction received and logged!", data))
-                {
-                    logger.error("Could not send Acknowlegement for instruction back to datonis.");
-                }
-                else
-                {
-                    logger.info("Sent an instruction acknowlegement back to Datonis!");
+                
+                JSONObject instructionCode = instruction.getInstructionBody();
+                String command = (String)instructionCode.get("command");
+                if (command != null && command.equalsIgnoreCase("download")) {
+                    String path = (String)instructionCode.get("path");
+                    // Workaround till the path escaping issue gets fixed
+                    path = path.replaceAll("\\|", "/");
+                    
+                    logger.info("Got instruction to download file: " + path + " from the platform");
+                    
+                    JSONObject data = new JSONObject();
+                    try {
+                        // Note replace the second argument with your local path where you want the file to be downloaded
+                        gateway.downloadFileUsingSftp(path, "/data/play");
+                        data.put("execution_status", "success");
+                        gateway.transmitAlert(instruction.getAlertKey(), instruction.getThingKey(), AlertType.INFO, "File download successful", data);
+                    } catch (EdgeGatewayException e) {
+                        data.put("execution_status", "failed");
+                        gateway.transmitAlert(instruction.getAlertKey(), instruction.getThingKey(), AlertType.ERROR, "File download failed", data);
+                    }
+                } else {
+                    logger.error("Some unknown command received");
+                    JSONObject data = new JSONObject();
+                    data.put("execution_status", "failed");
+                    gateway.transmitAlert(instruction.getAlertKey(), instruction.getThingKey(), AlertType.ERROR, "Unhandled instruction", data);
                 }
             }
         });

@@ -32,4 +32,8 @@ public class Instruction extends Message {
     public JSONObject getInstruction() {
         return instruction;
     }
+
+    public JSONObject getInstructionBody() {
+        return (JSONObject)instruction.get("instruction");
+    }
 }

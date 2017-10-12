@@ -124,11 +124,15 @@ public class EdgeUtil {
     public static String getRuleNotificationUrl(String datonisBaseUrl) {
         return datonisBaseUrl + "/api/v3/things/rule_notification";
     }
+
+    public static String getDownloadFileUrl(String datonisBaseUrl) {
+        return datonisBaseUrl + "/api/v3/files/download_file";
+    }
     
     public static String getRegisterGatewayUrl(String datonisBaseUrl) {
     	return datonisBaseUrl + "/api/v3/gateway/register";
     }
-	
+
 	public static String getMqttDataTopic(String clientId) {
 	    return "Altizon/Datonis/" + clientId + "/event";
 	}
