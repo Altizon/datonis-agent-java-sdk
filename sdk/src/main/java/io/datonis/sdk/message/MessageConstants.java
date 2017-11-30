@@ -16,6 +16,7 @@ public class MessageConstants {
     public static final String SENSOR_KEY = "sensor_key";
     public static final String SENSOR_ALERT = "sensor_alert";
     public static final String SENSOR_ALERT_KEY = "sensor_alert_key";
+    public static final String GATEWAY_KEY = "gateway_key";
     public static final String IPADDRESS = "ipaddress";
     public static final String MACADDRESS = "macaddress";
     public static final String SANDBOX = "sandbox";

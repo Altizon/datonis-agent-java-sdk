@@ -169,6 +169,10 @@ public class EdgeUtil {
 	    return "Altizon/Datonis/" + accessKey + "/sensor/" + thingKey + "/executeInstruction";
 	}
 	
+	public static String getMqttGatewayInstructionTopic(String accessKey, String gatewayKey) {
+        return "Altizon/Datonis/" + accessKey + "/gateway/" + gatewayKey + "/executeInstruction";
+    }
+	
 	public static String getMqttAlertTopic(String clientId) {
 	    return "Altizon/Datonis/" + clientId + "/alert";
 	}
@@ -180,4 +184,8 @@ public class EdgeUtil {
 	public static String getMqttRegisterGatewayTopic(String clientId) {
         return "Altizon/Datonis/" + clientId + "/register_gateway";
     }
+
+	public static String getMqttUpdateNotificationTopic(String accessKey) {
+	    return "Altizon/Datonis/" + accessKey + "/updateNotifications";
+	}
 }
