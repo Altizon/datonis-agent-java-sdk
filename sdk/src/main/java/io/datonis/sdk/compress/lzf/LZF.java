@@ -18,8 +18,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
+
+import io.datonis.sdk.communicator.MQTTCommunicator;
+
+import com.ning.compress.lzf.LZFDecoder;
+import com.ning.compress.lzf.LZFEncoder;
 
 /**
  * Simple command-line utility that can be used for testing LZF compression, or
@@ -29,6 +37,7 @@ import com.ning.compress.lzf.LZFOutputStream;
  * @author Tatu Saloranta (tatu@ning.com)
  */
 public class LZF {
+	private static final Logger logger = LoggerFactory.getLogger(LZF.class);
     public static void main(String[] args) throws IOException {
         // String str =
         // "{t:1440737867000,events:[{t:1440737567000,d:{min:208.60,max:213.40,avg:210.31},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737627000,d:{min:192.50,max:213.20,avg:202.20},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737687000,d:{min:191.20,max:204.40,avg:198.31},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737747000,d:{min:191.80,max:213.60,avg:204.64},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737807000,d:{min:199.00,max:210.90,avg:208.12},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f}],type:BULKDATA{t:1440737867000,events:[{t:1440737567000,d:{min:208.60,max:213.40,avg:210.31},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737627000,d:{min:192.50,max:213.20,avg:202.20},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737687000,d:{min:191.20,max:204.40,avg:198.31},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737747000,d:{min:191.80,max:213.60,avg:204.64},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737807000,d:{min:199.00,max:210.90,avg:208.12},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f}],type:BULKDATA{t:1440737867000,events:[{t:1440737567000,d:{min:208.60,max:213.40,avg:210.31},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737627000,d:{min:192.50,max:213.20,avg:202.20},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737687000,d:{min:191.20,max:204.40,avg:198.31},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737747000,d:{min:191.80,max:213.60,avg:204.64},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f},{t:1440737807000,d:{min:199.00,max:210.90,avg:208.12},type:DATA,s:e94tcc8572t25989f9cf6f8t294118tfd3e9ac7f}],type:BULKDATA";
@@ -37,12 +46,12 @@ public class LZF {
         String str = "poo";
         LZF obj = new LZF();
 
-        byte[] compressed = obj.compress(str);
+        byte[] compressed = LZF.compress(str);
 
         // System.out.println("\n" + new String(compressed));
         System.out.println("Compressed Length " + compressed.length);
 
-        byte[] uncompressed = obj.decompress(compressed);
+        byte[] uncompressed = LZF.decompress(compressed);
         String unc = null;
         if (uncompressed != null) {
             unc = new String(uncompressed);
@@ -54,8 +63,24 @@ public class LZF {
     }
 
     public static byte[] compress(String input) throws IOException {
+    	logger.info("String length is"+ input.length());
+    	byte[] op =LZFEncoder.encode(input.getBytes(StandardCharsets.UTF_8));
+    	logger.info("Compressed Length " + op.length);
 
-        InputStream in = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
+        byte[] uncompressed = LZF.decompress(op);
+        String unc = null;
+        if (uncompressed != null) {
+            unc = new String(uncompressed);
+        	logger.info("\n" + unc);
+        	logger.info(unc.length() + " " + input.length());
+        }
+
+    	logger.info("ANSWER IS "+ unc.equals(input));
+    	
+    	
+    	
+    	return LZFEncoder.encode(input.getBytes(StandardCharsets.UTF_8));
+        /*InputStream in = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         OutputStream out = new LZFOutputStream((OutputStream)bos);
@@ -69,11 +94,14 @@ public class LZF {
         out.flush();
         out.close();
 
-        return bos.toByteArray();
+        return bos.toByteArray();*/
     }
 
     public static byte[] decompress(byte[] input) throws IOException {
-        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    	logger.info("input Length is "+input.length);
+    	logger.info("Output is "+ LZFDecoder.decode(input));
+    	return LZFDecoder.decode(input);
+    	/*final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         OutputStream outputStream = new OutputStream() {
 
             @Override
@@ -109,6 +137,6 @@ public class LZF {
         outputStream.flush();
         outputStream.close();
 
-        return bos.toByteArray();
+        return bos.toByteArray();*/
     }
 }
