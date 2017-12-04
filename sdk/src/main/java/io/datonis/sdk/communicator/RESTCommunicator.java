@@ -29,10 +29,10 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.ProxyAuthenticationStrategy;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import io.datonis.sdk.org.json.simple.JSONArray;
+import io.datonis.sdk.org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.parser.JSONParser;
+import io.datonis.sdk.org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

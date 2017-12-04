@@ -3,9 +3,9 @@ package io.datonis.sdk;
 
 import io.datonis.sdk.exception.IllegalThingException;
 
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import io.datonis.sdk.org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.parser.JSONParser;
+import io.datonis.sdk.org.json.simple.parser.ParseException;
 
 /**
  * Object that represents a Data Stream

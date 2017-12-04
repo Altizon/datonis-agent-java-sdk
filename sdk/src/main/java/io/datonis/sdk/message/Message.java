@@ -1,7 +1,7 @@
 
 package io.datonis.sdk.message;
 
-import org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.JSONObject;
 
 /**
  * Represents a message to be transmitted to Datonis

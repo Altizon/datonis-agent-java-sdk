@@ -10,8 +10,8 @@ import io.datonis.sdk.message.Instruction;
 
 import java.util.Random;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.JSONArray;
+import io.datonis.sdk.org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

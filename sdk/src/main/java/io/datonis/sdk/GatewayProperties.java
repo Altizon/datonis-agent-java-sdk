@@ -3,8 +3,8 @@ package io.datonis.sdk;
 
 import java.io.FileReader;
 
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
+import io.datonis.sdk.org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

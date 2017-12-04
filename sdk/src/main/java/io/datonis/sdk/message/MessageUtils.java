@@ -3,7 +3,7 @@ package io.datonis.sdk.message;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.JSONObject;
 
 
 

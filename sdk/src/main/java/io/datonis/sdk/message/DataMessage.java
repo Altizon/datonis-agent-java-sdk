@@ -1,8 +1,8 @@
 
 package io.datonis.sdk.message;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.JSONArray;
+import io.datonis.sdk.org.json.simple.JSONObject;
 
 /**
  * Represents a Data packet being transmitted to Datonis

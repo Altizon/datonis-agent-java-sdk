@@ -2,8 +2,8 @@ package io.datonis.sdk.message;
 
 import java.util.Collection;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.JSONArray;
+import io.datonis.sdk.org.json.simple.JSONObject;
 
 /**
  * Represents a bunch of data packets packed into a bulk message

@@ -1,6 +1,6 @@
 package io.datonis.sdk.message;
 
-import org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.JSONObject;
 
 /**
  * Bean that represents an alert message sent to Datonis 

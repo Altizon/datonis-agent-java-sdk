@@ -12,6 +12,10 @@ import io.datonis.sdk.message.Message;
 import io.datonis.sdk.message.MessageConstants;
 import io.datonis.sdk.message.MessageUtils;
 import io.datonis.sdk.message.RegisterMessage;
+import io.datonis.sdk.org.json.simple.JSONArray;
+import io.datonis.sdk.org.json.simple.JSONAware;
+import io.datonis.sdk.org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.parser.ContainerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,12 +39,8 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONAware;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.ContainerFactory;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import io.datonis.sdk.org.json.simple.parser.JSONParser;
+import io.datonis.sdk.org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

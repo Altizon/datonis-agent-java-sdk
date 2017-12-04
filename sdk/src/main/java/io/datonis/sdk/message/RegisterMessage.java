@@ -3,7 +3,7 @@ package io.datonis.sdk.message;
 
 import io.datonis.sdk.Thing;
 
-import org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.JSONObject;
 
 /**
  * Message to register a DataStream with Datonis
