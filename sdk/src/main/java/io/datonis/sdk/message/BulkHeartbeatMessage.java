@@ -2,10 +2,6 @@
 package io.datonis.sdk.message;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Consumer;
-
 import io.datonis.sdk.Thing;
 
 import io.datonis.sdk.org.json.simple.JSONArray;
