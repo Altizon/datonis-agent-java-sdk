@@ -34,6 +34,7 @@ public final class GatewayProperties {
     protected static final String BULK_TRANSMIT_INTERVAL = "bulk_transmit_interval";
     protected static final String BULK_MAX_ELEMENTS = "bulk_max_elements";
     protected static final String BULK_TRANSMIT = "bulk_transmit";
+    public static final String USE_COMPRESSION = "use_compression";
     protected static final String QUEUE_SIZE = "queue_size";
     protected static final String PROTOCOL = "protocol";
     protected static final String PROXY_HOST = "proxy_host";
@@ -102,6 +103,9 @@ public final class GatewayProperties {
         if (!properties.containsKey(BULK_TRANSMIT))
             properties.put(BULK_TRANSMIT, Boolean.FALSE);
 
+        if (!properties.containsKey(USE_COMPRESSION))
+            properties.put(USE_COMPRESSION, Boolean.FALSE);
+        
         if (!properties.containsKey(QUEUE_SIZE))
             properties.put(QUEUE_SIZE, (long)100);
         if (!properties.containsKey(PROTOCOL))

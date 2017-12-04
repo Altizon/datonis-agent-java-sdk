@@ -3,6 +3,7 @@ package io.datonis.sdk.communicator;
 
 import io.datonis.sdk.EdgeGateway;
 import io.datonis.sdk.EdgeUtil;
+import io.datonis.sdk.GatewayProperties;
 import io.datonis.sdk.compress.lzf.LZF;
 import io.datonis.sdk.message.AlertMessage;
 import io.datonis.sdk.message.BulkDataMessage;
@@ -52,30 +53,51 @@ import org.slf4j.LoggerFactory;
  */
 public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
     private static final Logger logger = LoggerFactory.getLogger(MQTTCommunicator.class);
+
     private static final int HTTP_ACK_MAX_RETRIES = 10;
+
     private static final int DATA_PACKET = 0;
+
     private static final int BULK_PACKET = 1;
+
     private static final int HEART_BEAT = 2;
+
     private static final int REGISTER = 3;
+
     private static final int ALERT = 4;
+
     private static final int COMPRESSED_DATA_PACKET = 5;
+
     private static final int COMPRESSED_BULK_PACKET = 6;
 
     private EdgeGateway gateway;
+
     private String clientId;
+
     private int timeout;
+
     private Map<Integer, Integer> qosMap;
+
     private Map<Integer, String> topicMap;
+
     private Map<String, Set<String>> thingKeys;
+
     private Set<String> subscribedForInstructions;
+
     private String broker;
+
     private MqttClient mqttClient;
+
     private ConcurrentHashMap<String, JSONObject> acks = new ConcurrentHashMap<>();
+
     private AtomicInteger ackCounter = new AtomicInteger();
+
     private JSONParser parser = new JSONParser();
+
     private volatile boolean connected = false;
 
-    public MQTTCommunicator(EdgeGateway gateway, int timeout, String brokerHost, boolean secure, Long port) {
+    public MQTTCommunicator(EdgeGateway gateway, int timeout, String brokerHost, boolean secure,
+            Long port) {
         this.gateway = gateway;
         if (secure) {
             this.broker = "ssl://" + brokerHost;
@@ -123,8 +145,6 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         topicMap.put(ALERT, EdgeUtil.getMqttAlertTopic(clientId));
         qosMap.put(ALERT, 1);
     }
-    
-    
 
     @Override
     public boolean isConnected() {
@@ -167,17 +187,13 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
                 && (json.length() > 1024)) {
             logger.debug("Original data Size: " + json.length());
             byte[] compressedJson = null;
-            try {
-                compressedJson = LZF.compress(json);
-                logger.debug("Compressed data Size: " + compressedJson.length);
-                message = new MqttMessage(compressedJson);
+            compressedJson = LZF.compress(json);
+            logger.debug("Compressed data Size: " + compressedJson.length);
+            message = new MqttMessage(compressedJson);
 
-                qos = qosMap.get(dataType + COMPRESSED_DATA_PACKET);
-                topic = topicMap.get(dataType + COMPRESSED_DATA_PACKET);
-            } catch (IOException e) {
-                logger.warn("Could not compress data, sending without compression", e);
-                message = new MqttMessage(json.getBytes());
-            }
+            qos = qosMap.get(dataType + COMPRESSED_DATA_PACKET);
+            topic = topicMap.get(dataType + COMPRESSED_DATA_PACKET);
+
         } else {
             message = new MqttMessage(json.getBytes());
         }
@@ -197,8 +213,10 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
 
     protected JSONObject encodeData(Message message) {
         JSONObject data = message.toJSON(true);
-        String accessKey = (message.getAccessKey() == null) ? this.gateway.getAccessKey() : message.getAccessKey();
-        String secretKey = (message.getSecretKey() == null) ? this.gateway.getSecretKey() : message.getSecretKey();
+        String accessKey = (message.getAccessKey() == null) ? this.gateway.getAccessKey()
+                : message.getAccessKey();
+        String secretKey = (message.getSecretKey() == null) ? this.gateway.getSecretKey()
+                : message.getSecretKey();
         data = MessageUtils.encodeObject(data, accessKey, secretKey);
         data.put(MessageConstants.PROTOCOL_VERSION, 2.0);
         return data;
@@ -211,7 +229,8 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         }
 
         if (ackCounter.get() > 500) {
-            // periodically cleanup any acks that were received late and not consumed by anyone
+            // periodically cleanup any acks that were received late and not
+            // consumed by anyone
             List<String> toRemove = new ArrayList<>();
             long currentTimestamp = System.currentTimeMillis();
             for (Entry<String, JSONObject> a : acks.entrySet()) {
@@ -251,9 +270,9 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
 
                 ackMsg = lookupResponse(hash);
                 if ((ackMsg != null) && ackMsg.containsKey("http_code")) {
-                	httpCode = ((Number)ackMsg.get("http_code")).intValue();
+                    httpCode = ((Number)ackMsg.get("http_code")).intValue();
                 }
-                
+
                 if (httpCode != 408) {
                     break;
                 }
@@ -261,24 +280,24 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
                 counter++;
             }
         }
-        
+
         if (httpCode != 200 && (ackMsg != null) && ackMsg.containsKey("http_msg")) {
-        	JSONArray err_msg_array = null;
-        	Object httpMsg = ackMsg.get("http_msg"); 
-        	if (httpMsg instanceof JSONArray) {
-        		err_msg_array = (JSONArray) ackMsg.get("http_msg");
-        	} else if (httpMsg instanceof JSONObject){
-    			err_msg_array = (JSONArray) ((JSONObject)httpMsg).get("errors");
-        	}
-        	
-        	if (err_msg_array != null) {
-	        	for (int i = 0; i < err_msg_array.size(); i++){
-	        		JSONObject object = (JSONObject) err_msg_array.get(i);
-	        		logger.error("Error " + object.get("code") + " : " + object.get("message"));
-	            }
-        	} else if (!httpMsg.toString().isEmpty()){
-        	    logger.error("Error from the Datonis server: " + httpMsg);
-        	}
+            JSONArray err_msg_array = null;
+            Object httpMsg = ackMsg.get("http_msg");
+            if (httpMsg instanceof JSONArray) {
+                err_msg_array = (JSONArray)ackMsg.get("http_msg");
+            } else if (httpMsg instanceof JSONObject) {
+                err_msg_array = (JSONArray)((JSONObject)httpMsg).get("errors");
+            }
+
+            if (err_msg_array != null) {
+                for (int i = 0; i < err_msg_array.size(); i++) {
+                    JSONObject object = (JSONObject)err_msg_array.get(i);
+                    logger.error("Error " + object.get("code") + " : " + object.get("message"));
+                }
+            } else if (!httpMsg.toString().isEmpty()) {
+                logger.error("Error from the Datonis server: " + httpMsg);
+            }
         }
         return EdgeUtil.convertHTTPResponseCode(httpCode);
     }
@@ -289,7 +308,8 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         // Attempt reconnection
         int retval = INVALID_PARAMS;
         while (retval != OK) {
-            logger.error("Connection to Datonis MQTT server is lost. Attempting to connect again...");
+            logger.error(
+                    "Connection to Datonis MQTT server is lost. Attempting to connect again...");
             retval = connect();
             if (retval == OK) {
                 subscribedForInstructions.clear();
@@ -299,7 +319,10 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
                             subscribeForThingInstructions(entry.getKey(), thingKey);
                             subscribedForInstructions.add(thingKey);
                         } catch (MqttException e) {
-                            logger.error("Could not subscribe to Datonis MQTT server to receive instructions for thing: " + thingKey + " : " + e.getMessage(), e);
+                            logger.error(
+                                    "Could not subscribe to Datonis MQTT server to receive instructions for thing: "
+                                            + thingKey + " : " + e.getMessage(),
+                                    e);
                         }
                     }
                 }
@@ -334,7 +357,8 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         logger.info("Subscribed acknowlegements");
     }
 
-    private void subscribeForThingInstructions(String accessKey, String thingKey) throws MqttException {
+    private void subscribeForThingInstructions(String accessKey, String thingKey)
+            throws MqttException {
         String topic = EdgeUtil.getMqttInstructionTopic(accessKey, thingKey);
         // Setting QOS for instructions to 2 so that they are most reliable.
         logger.info("Subscribing on instructions for thing: " + thingKey);
@@ -353,11 +377,12 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
                     JSONAware httpContent = (JSONAware)httpMsg;
                     httpMsg = httpContent.toJSONString();
                 }
-    
+
                 if (httpMsg != null) {
-                	logger.debug("Recieved http code: " + httpCode + ", context: " + context + ", content: " + httpMsg);
+                    logger.debug("Recieved http code: " + httpCode + ", context: " + context
+                            + ", content: " + httpMsg);
                 } else {
-                	logger.debug("Recieved http code: " + httpCode + ", context: " + context);
+                    logger.debug("Recieved http code: " + httpCode + ", context: " + context);
                 }
                 ack.put("timestamp", System.currentTimeMillis());
                 acks.put(context, ack);
@@ -404,8 +429,8 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
     private boolean matchHashCode(LinkedHashMap data) {
         String hash = (String)data.remove(MessageConstants.HASH);
         data.remove(MessageConstants.ACCESS_KEY);
-        return hash.equalsIgnoreCase(MessageUtils.encode(this.gateway.getSecretKey(),
-                JSONObject.toJSONString(data)));
+        return hash.equalsIgnoreCase(
+                MessageUtils.encode(this.gateway.getSecretKey(), JSONObject.toJSONString(data)));
     }
 
     private void handleInstruction(LinkedHashMap parsed) {
@@ -418,19 +443,23 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         Object timestamp = parsed.get(MessageConstants.TIMESTAMP);
 
         if (instruction == null || !(instruction instanceof LinkedHashMap)) {
-            logger.warn("Instruction not passed or does not match expected format. Ignoring instruction.");
+            logger.warn(
+                    "Instruction not passed or does not match expected format. Ignoring instruction.");
             return;
         }
         if (thingKey == null || (!(thingKey instanceof String))) {
-            logger.warn("Sensor/Thing Key not passed or does not match expected format. Ignoring instruction.");
+            logger.warn(
+                    "Sensor/Thing Key not passed or does not match expected format. Ignoring instruction.");
             return;
         }
         if (alertKey == null || !(alertKey instanceof String)) {
-            logger.warn("Alert Key not passed or does not match expected format. Ignoring instruction.");
+            logger.warn(
+                    "Alert Key not passed or does not match expected format. Ignoring instruction.");
             return;
         }
         if (timestamp == null || (!(timestamp instanceof Long))) {
-            logger.warn("Timestamp not passed or does not match expected format. Ignoring instruction. ");
+            logger.warn(
+                    "Timestamp not passed or does not match expected format. Ignoring instruction. ");
             return;
         }
 
@@ -438,18 +467,22 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         try {
             reparsed = parser.parse(JSONObject.toJSONString((LinkedHashMap)instruction));
             if (reparsed instanceof JSONObject) {
-                Instruction message = new Instruction((Long)timestamp, (String)alertKey, (String)thingKey, (JSONObject)reparsed);
+                Instruction message = new Instruction((Long)timestamp, (String)alertKey,
+                        (String)thingKey, (JSONObject)reparsed);
                 this.gateway.messageReceived(message);
             }
         } catch (ParseException e) {
-            logger.error("Could not re-parse instruction. It will not be processed: " + e.getMessage(), e);
+            logger.error(
+                    "Could not re-parse instruction. It will not be processed: " + e.getMessage(),
+                    e);
         }
     }
-    
+
     private void checkForInstructionSubscription(String thingKey, Message msg) {
         if (!subscribedForInstructions.contains(thingKey)) {
             try {
-                String accessKey = (msg.getAccessKey() == null) ? this.gateway.getAccessKey() : msg.getAccessKey();
+                String accessKey = (msg.getAccessKey() == null) ? this.gateway.getAccessKey()
+                        : msg.getAccessKey();
                 subscribeForThingInstructions(accessKey, thingKey);
                 Set<String> set = thingKeys.get(accessKey);
                 if (set == null) {
@@ -459,24 +492,25 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
                 set.add(thingKey);
                 subscribedForInstructions.add(thingKey);
             } catch (MqttException e) {
-                logger.error("Could not subscribe for instructions for Thing key: "  + thingKey, e);
-                logger.error("Instructions will not for Thing key: "  + thingKey);
+                logger.error("Could not subscribe for instructions for Thing key: " + thingKey, e);
+                logger.error("Instructions will not for Thing key: " + thingKey);
             }
         }
     }
 
     @Override
     public int transmit(Message msg) {
+        Boolean compress = (Boolean)GatewayProperties.getValue(GatewayProperties.USE_COMPRESSION);
         switch (msg.getType()) {
             case Message.DATA:
                 checkForInstructionSubscription(((DataMessage)msg).getThingKey(), msg);
-                return encodeAndTransmit(DATA_PACKET, msg, /* TODO: compress only if required */false);
+                return encodeAndTransmit(DATA_PACKET, msg, compress);
             case Message.BULKDATA:
-                BulkDataMessage bulk = (BulkDataMessage) msg;
+                BulkDataMessage bulk = (BulkDataMessage)msg;
                 for (DataMessage dm : bulk.getMessages()) {
                     checkForInstructionSubscription(dm.getThingKey(), dm);
                 }
-                return encodeAndTransmit(DATA_PACKET, msg, /* TODO: compress only if required */false);
+                return encodeAndTransmit(DATA_PACKET, msg, compress);
             case Message.THING_REGISTER:
                 checkForInstructionSubscription(((RegisterMessage)msg).getThing().getKey(), msg);
                 return encodeAndTransmit(REGISTER, msg, false);
