@@ -135,6 +135,23 @@ public class SampleAgentWithDownload
                         data.put("execution_status", "failed");
                         gateway.transmitAlert(instruction.getAlertKey(), instruction.getThingKey(), AlertType.ERROR, "File download failed", data);
                     }
+                } else if (command.equalsIgnoreCase("parent_download")) {
+                    String path = (String)instructionCode.get("path");
+                    // Workaround till the path escaping issue gets fixed
+                    path = path.replaceAll("\\|", "/");
+
+                    logger.info("Got instruction to download file: " + path + " from the platform");
+
+                    JSONObject data = new JSONObject();
+                    try {
+                        // Note replace the second argument with your local path where you want the file to be downloaded
+                        gateway.downloadFileUsingSftp(path, "/data/play", true);
+                        data.put("execution_status", "success");
+                        gateway.transmitAlert(instruction.getAlertKey(), instruction.getThingKey(), AlertType.INFO, "File download successful", data);
+                    } catch (EdgeGatewayException e) {
+                        data.put("execution_status", "failed");
+                        gateway.transmitAlert(instruction.getAlertKey(), instruction.getThingKey(), AlertType.ERROR, "File download failed", data);
+                    }
                 } else {
                     logger.error("Some unknown command received");
                     JSONObject data = new JSONObject();

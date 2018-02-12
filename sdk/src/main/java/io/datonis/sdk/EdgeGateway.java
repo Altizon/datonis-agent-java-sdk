@@ -572,13 +572,19 @@ public class EdgeGateway {
         return s;
     }
 
-    public void downloadFileUsingSftp(String sourcePath, String destPath) throws EdgeGatewayException {
+    public void downloadFileUsingSftp(String sourcePath, String destPath, boolean downloadFromParent) throws EdgeGatewayException {
         String host = "unknown";
         Session session = null;
         Channel channel = null;
         try {
             JSch jsch = new JSch();
             String username = getConfiguration(GatewayProperties.SSH_USERNAME);
+            if (downloadFromParent) {
+                username = getConfiguration(GatewayProperties.SSH_PARENT_USERNAME);
+                if (username == null) {
+                    throw new EdgeGatewayException("ssh_parent_username property needs to be specified in the configuration file");
+                }
+            }
             String knownHostsPath = getConfiguration(GatewayProperties.SSH_KNOWN_HOSTS);
             String privateKeyPath = getConfiguration(GatewayProperties.SSH_PRIVATE_KEY);
             host = getConfiguration(GatewayProperties.SSH_HOST);
@@ -642,6 +648,10 @@ public class EdgeGateway {
                 logger.warn("Error while disconnecting SFTP client.", e);
             }
         }
+    }
+
+    public void downloadFileUsingSftp(String sourcePath, String destPath) throws EdgeGatewayException {
+        downloadFileUsingSftp(sourcePath, destPath, false);
     }
 
     public void downloadFileUsingHttp(String sourcePath, String destPath) throws EdgeGatewayException {
