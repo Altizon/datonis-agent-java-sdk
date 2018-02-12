@@ -579,12 +579,6 @@ public class EdgeGateway {
         try {
             JSch jsch = new JSch();
             String username = getConfiguration(GatewayProperties.SSH_USERNAME);
-            if (downloadFromParent) {
-                username = getConfiguration(GatewayProperties.SSH_PARENT_USERNAME);
-                if (username == null) {
-                    throw new EdgeGatewayException("ssh_parent_username property needs to be specified in the configuration file");
-                }
-            }
             String knownHostsPath = getConfiguration(GatewayProperties.SSH_KNOWN_HOSTS);
             String privateKeyPath = getConfiguration(GatewayProperties.SSH_PRIVATE_KEY);
             host = getConfiguration(GatewayProperties.SSH_HOST);
@@ -601,7 +595,7 @@ public class EdgeGateway {
             channel = session.openChannel("sftp");
             channel.connect();
             ChannelSftp sftp = (ChannelSftp)channel;
-            String newSourcePath = "FILE_STORAGE" + sourcePath;
+            String newSourcePath = (downloadFromParent ? "PARENT_FILE_STORAGE" : "FILE_STORAGE") + sourcePath;
             sftp.get(newSourcePath, destPath, new SftpProgressMonitor() {
                 private double max;
                 private double soFar = 0;
