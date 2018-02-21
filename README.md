@@ -58,3 +58,7 @@ java -Dlog4j.properties=src/main/resources/log4j.properties -Ddatonis-edge.prope
 | bulk_max_elements  | Maximum number of elements to put into a bulk packet | > 10  | 25 |
 | concurrency  | Number of concurrent requests | >= 1  | 5 |
 | request_timeout  | Timeout for socket connection | > 60000  | 180000 (3 minutes) |
+
+## Need Help?
+
+Please feel free to raise a ticket at our [Support Portal](https://support.datonis.io)
