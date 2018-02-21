@@ -17,8 +17,9 @@ import io.datonis.sdk.org.json.simple.JSONArray;
 import io.datonis.sdk.org.json.simple.JSONAware;
 import io.datonis.sdk.org.json.simple.JSONObject;
 import io.datonis.sdk.org.json.simple.parser.ContainerFactory;
+import io.datonis.sdk.org.json.simple.parser.JSONParser;
+import io.datonis.sdk.org.json.simple.parser.ParseException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,8 +41,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import io.datonis.sdk.org.json.simple.parser.JSONParser;
-import io.datonis.sdk.org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -296,7 +295,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
                     logger.error("Error " + object.get("code") + " : " + object.get("message"));
                 }
             } else if (!httpMsg.toString().isEmpty()) {
-                logger.error("Error from the Datonis server: " + httpMsg);
+                logger.error("Error from server: " + httpMsg);
             }
         }
         return EdgeUtil.convertHTTPResponseCode(httpCode);
@@ -309,7 +308,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         int retval = INVALID_PARAMS;
         while (retval != OK) {
             logger.error(
-                    "Connection to Datonis MQTT server is lost. Attempting to connect again...");
+                    "Connection to the MQTT server is lost. Attempting to connect again...");
             retval = connect();
             if (retval == OK) {
                 subscribedForInstructions.clear();
@@ -320,7 +319,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
                             subscribedForInstructions.add(thingKey);
                         } catch (MqttException e) {
                             logger.error(
-                                    "Could not subscribe to Datonis MQTT server to receive instructions for thing: "
+                                    "Could not subscribe to the MQTT server to receive instructions for thing: "
                                             + thingKey + " : " + e.getMessage(),
                                     e);
                         }
@@ -529,7 +528,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
             mqttClient.disconnect();
             mqttClient.close();
         } catch (MqttException e) {
-            logger.error("Problem while closing MQTT connection to Datonis", e);
+            logger.error("Problem while closing MQTT connection", e);
         }
     }
 }

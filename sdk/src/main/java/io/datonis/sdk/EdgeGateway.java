@@ -16,6 +16,9 @@ import io.datonis.sdk.message.HeartbeatMessage;
 import io.datonis.sdk.message.Instruction;
 import io.datonis.sdk.message.Message;
 import io.datonis.sdk.message.RegisterMessage;
+import io.datonis.sdk.org.json.simple.JSONArray;
+import io.datonis.sdk.org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.parser.JSONParser;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -52,9 +55,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.ProxyAuthenticationStrategy;
-import io.datonis.sdk.org.json.simple.JSONArray;
-import io.datonis.sdk.org.json.simple.JSONObject;
-import io.datonis.sdk.org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +101,7 @@ public class EdgeGateway {
     private String proxyUsername;
     private String proxyPassword;
     private String proxyDomain;
+    private String productName = "Datonis";
 
     public EdgeGateway() {
         this(new QueueFactory());
@@ -183,7 +184,14 @@ public class EdgeGateway {
         alertQueue = queueFactory.createQueue((int) queueSize, "EdgeAlertDB", AlertMessage.class);
         handshakeQueue = new LinkedBlockingQueue<Message>(500);
         communicator = createCommunicator();
-        communicator.connect();
+        while (communicator.connect() != EdgeCommunicator.OK) {
+            int connectionTimeout = 60;
+            logger.warn("Cannot connect to the " + productName + " server. Will try again after " + connectionTimeout + " seconds");
+            try {
+                Thread.sleep(connectionTimeout * 1000);
+            } catch (InterruptedException e) {
+            }
+        }
         
         // No register unless explicitly asked for
         if (register == null || register == false) {
@@ -280,7 +288,12 @@ public class EdgeGateway {
     }
 
     public void start() {
-        logger.info("Starting up the Datonis Edge Gateway");
+        productName = (String)GatewayProperties.getValue(GatewayProperties.PRODUCT_NAME);
+        if (productName == null) {
+            productName = "Datonis";
+        }
+
+        logger.info("Starting up the " + productName + " Edge Gateway");
         Boolean simulate = (Boolean)GatewayProperties.getValue(GatewayProperties.SIMULATE);
         // In the simulate mode, we simply 'trust' that the message can be
         // transmitted.
@@ -302,7 +315,7 @@ public class EdgeGateway {
                 // Ignore
             }
         }
-        logger.info("Successfully started the Datonis Edge Gateway");
+        logger.info("Successfully started the " + productName + " Edge Gateway");
     }
 
     public boolean addThing(Thing thing) {
@@ -479,7 +492,7 @@ public class EdgeGateway {
         queueFactory.shutdownCallback(dataQueue);
         queueFactory.shutdownCallback(alertQueue);
         communicator.shutdown();
-        logger.info("Datonis Edge Gateway has shut down");
+        logger.info(productName + " Edge Gateway has shut down");
     }
 
     public synchronized void setInstructionHandler(InstructionHandler handler) {
