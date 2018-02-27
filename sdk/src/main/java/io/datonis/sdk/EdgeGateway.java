@@ -184,13 +184,22 @@ public class EdgeGateway {
         alertQueue = queueFactory.createQueue((int) queueSize, "EdgeAlertDB", AlertMessage.class);
         handshakeQueue = new LinkedBlockingQueue<Message>(500);
         communicator = createCommunicator();
-        while (communicator.connect() != EdgeCommunicator.OK) {
-            int connectionTimeout = 60;
-            logger.warn("Cannot connect to the " + productName + " server. Will try again after " + connectionTimeout + " seconds");
-            try {
-                Thread.sleep(connectionTimeout * 1000);
-            } catch (InterruptedException e) {
-            }
+        if (communicator.connect() != EdgeCommunicator.OK) {
+            final int connectionTimeout = 60;
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    do {
+                        logger.warn("Cannot connect to the " + productName + " server. Will try again after " + connectionTimeout + " seconds");
+                        try {
+                            Thread.sleep(connectionTimeout * 1000);
+                        } catch (InterruptedException e) {
+                        }
+                    } while (!isShutdown() && (communicator.connect() != EdgeCommunicator.OK));
+                }
+            }, "Connection-Thread");
+            t.start();
+            threads.add(t);
         }
         
         // No register unless explicitly asked for
