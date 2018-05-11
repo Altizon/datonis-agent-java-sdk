@@ -16,6 +16,9 @@ import io.datonis.sdk.message.HeartbeatMessage;
 import io.datonis.sdk.message.Instruction;
 import io.datonis.sdk.message.Message;
 import io.datonis.sdk.message.RegisterMessage;
+import io.datonis.sdk.org.json.simple.JSONArray;
+import io.datonis.sdk.org.json.simple.JSONObject;
+import io.datonis.sdk.org.json.simple.parser.JSONParser;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -52,9 +55,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.ProxyAuthenticationStrategy;
-import io.datonis.sdk.org.json.simple.JSONArray;
-import io.datonis.sdk.org.json.simple.JSONObject;
-import io.datonis.sdk.org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +101,7 @@ public class EdgeGateway {
     private String proxyUsername;
     private String proxyPassword;
     private String proxyDomain;
+    private String productName = "Datonis";
 
     public EdgeGateway() {
         this(new QueueFactory());
@@ -183,7 +184,23 @@ public class EdgeGateway {
         alertQueue = queueFactory.createQueue((int) queueSize, "EdgeAlertDB", AlertMessage.class);
         handshakeQueue = new LinkedBlockingQueue<Message>(500);
         communicator = createCommunicator();
-        communicator.connect();
+        if (communicator.connect() != EdgeCommunicator.OK) {
+            final int connectionTimeout = 60;
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    do {
+                        logger.warn("Cannot connect to the " + productName + " server. Will try again after " + connectionTimeout + " seconds");
+                        try {
+                            Thread.sleep(connectionTimeout * 1000);
+                        } catch (InterruptedException e) {
+                        }
+                    } while (!isShutdown() && (communicator.connect() != EdgeCommunicator.OK));
+                }
+            }, "Connection-Thread");
+            t.start();
+            threads.add(t);
+        }
         
         // No register unless explicitly asked for
         if (register == null || register == false) {
@@ -280,7 +297,12 @@ public class EdgeGateway {
     }
 
     public void start() {
-        logger.info("Starting up the Datonis Edge Gateway");
+        productName = (String)GatewayProperties.getValue(GatewayProperties.PRODUCT_NAME);
+        if (productName == null) {
+            productName = "Datonis";
+        }
+
+        logger.info("Starting up the " + productName + " Edge Gateway");
         Boolean simulate = (Boolean)GatewayProperties.getValue(GatewayProperties.SIMULATE);
         // In the simulate mode, we simply 'trust' that the message can be
         // transmitted.
@@ -302,7 +324,7 @@ public class EdgeGateway {
                 // Ignore
             }
         }
-        logger.info("Successfully started the Datonis Edge Gateway");
+        logger.info("Successfully started the " + productName + " Edge Gateway");
     }
 
     public boolean addThing(Thing thing) {
@@ -479,7 +501,7 @@ public class EdgeGateway {
         queueFactory.shutdownCallback(dataQueue);
         queueFactory.shutdownCallback(alertQueue);
         communicator.shutdown();
-        logger.info("Datonis Edge Gateway has shut down");
+        logger.info(productName + " Edge Gateway has shut down");
     }
 
     public synchronized void setInstructionHandler(InstructionHandler handler) {
@@ -572,7 +594,7 @@ public class EdgeGateway {
         return s;
     }
 
-    public void downloadFileUsingSftp(String sourcePath, String destPath) throws EdgeGatewayException {
+    public void downloadFileUsingSftp(String sourcePath, String destPath, boolean downloadFromParent) throws EdgeGatewayException {
         String host = "unknown";
         Session session = null;
         Channel channel = null;
@@ -595,7 +617,7 @@ public class EdgeGateway {
             channel = session.openChannel("sftp");
             channel.connect();
             ChannelSftp sftp = (ChannelSftp)channel;
-            String newSourcePath = "FILE_STORAGE" + sourcePath;
+            String newSourcePath = (downloadFromParent ? "PARENT_FILE_STORAGE" : "FILE_STORAGE") + sourcePath;
             sftp.get(newSourcePath, destPath, new SftpProgressMonitor() {
                 private double max;
                 private double soFar = 0;
@@ -642,6 +664,10 @@ public class EdgeGateway {
                 logger.warn("Error while disconnecting SFTP client.", e);
             }
         }
+    }
+
+    public void downloadFileUsingSftp(String sourcePath, String destPath) throws EdgeGatewayException {
+        downloadFileUsingSftp(sourcePath, destPath, false);
     }
 
     public void downloadFileUsingHttp(String sourcePath, String destPath) throws EdgeGatewayException {

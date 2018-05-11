@@ -94,7 +94,7 @@ public class GatewayMessageConsumer implements Runnable {
                             public void run() {
                                 try {
                                     while (!communicator.isConnected()) {
-                                        logger.info("Waiting for communicator to connect to the Datonis Server");
+                                        logger.info("Waiting for communicator to connect to the Server");
                                         Thread.sleep(50000);
                                     }
                                     logger.debug("Attempting to transmit next message");

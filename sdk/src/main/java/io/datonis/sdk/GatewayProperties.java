@@ -48,6 +48,7 @@ public final class GatewayProperties {
     protected static final String SSH_HOST = "ssh_host";
     protected static final String SSH_PORT = "ssh_port";
     protected static final String SSH_USERNAME = "ssh_username";
+    protected static final String PRODUCT_NAME = "product_name";
 
     private static JSONObject properties;
 

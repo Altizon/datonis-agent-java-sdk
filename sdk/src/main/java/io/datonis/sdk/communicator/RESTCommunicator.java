@@ -177,7 +177,7 @@ public class RESTCommunicator implements EdgeCommunicator {
         			JSONObject jsonObject = (JSONObject) obj;
                 	err_msg_array = (JSONArray) jsonObject.get("errors");
         		} else {
-        		    logger.error("Error from Datonis: " + error);
+                    logger.error("Error from server: " + error);
         		}
         		
         		if (err_msg_array != null) {
