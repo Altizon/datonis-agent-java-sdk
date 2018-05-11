@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Communicator that sends data using the MQTT protocol to the Datonis platform
- * 
+ *
  * @author Ranjit Nair (ranjit@altizon.com)
  * @author Rajesh Jangam (rajesh@altizon.com)
  */
@@ -317,7 +317,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
         connected = false;
         // Attempt reconnection
         int retval = INVALID_PARAMS;
-        while (retval != OK && retval != UNAUTHORIZED) {
+        while (retval != OK) {
             logger.error(
                     "Connection to the MQTT server is lost. Attempting to connect again...");
             retval = connect();
