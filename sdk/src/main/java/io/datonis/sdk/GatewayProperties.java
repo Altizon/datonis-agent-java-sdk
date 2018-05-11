@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This is the class that is responsible for loading all the properties used by
  * the agent. This is a singleton so use getInstance to load up.
- * 
+ *
  * @author Ranjit Nair (ranjit@altizon.com)
  */
 public final class GatewayProperties {
@@ -53,9 +53,11 @@ public final class GatewayProperties {
 
     static {
         try {
+            logger.info("Loading Config File ");
             loadProperties();
+            logger.info("MQTT host is " + properties.get(API_HOST));
         } catch (Exception e) {
-            String message = "Unable to load the agent configurations file.\nPlease ensure that the datonis-edge.properties file exists in the root or is of the correct format.\nYou can also pass a JVM parameter -Ddatonis-edge.properties to point to a valid properties file"; 
+            String message = "Unable to load the agent configurations file.\nPlease ensure that the datonis-edge.properties file exists in the root or is of the correct format.\nYou can also pass a JVM parameter -Ddatonis-edge.properties to point to a valid properties file";
             logger.error(message, e);
             System.err.println(message);
             System.exit(-1);
@@ -80,15 +82,12 @@ public final class GatewayProperties {
         if (!properties.containsKey(TIMEOUT))
             properties.put(TIMEOUT, (long)10000);
 
-        if (!properties.containsKey(API_HOST))
-            properties.put(API_HOST, "api.datonis.io");
-
         if (!properties.containsKey(SIMULATE))
             properties.put(SIMULATE, Boolean.FALSE);
 
         if (!properties.containsKey(THREAD_POOL_SIZE))
             properties.put(THREAD_POOL_SIZE, (long)5);
-        
+
         // If someone used the new concurrency configuration
         if (properties.containsKey(CONCURRENCY)) {
             properties.put(THREAD_POOL_SIZE, properties.get(CONCURRENCY));
@@ -105,11 +104,20 @@ public final class GatewayProperties {
 
         if (!properties.containsKey(USE_COMPRESSION))
             properties.put(USE_COMPRESSION, Boolean.FALSE);
-        
+
         if (!properties.containsKey(QUEUE_SIZE))
             properties.put(QUEUE_SIZE, (long)100);
         if (!properties.containsKey(PROTOCOL))
             properties.put(PROTOCOL, "https");
+
+        if (!properties.containsKey(API_HOST)) {
+            if (properties.get(PROTOCOL).equals("mqtt") || properties.get(PROTOCOL).equals("mqtts")) {
+                logger.info("MQTT PROTOCOL connecting to mqttbroker");
+                properties.put(API_HOST, "mqtt-broker.datonis.io");
+            }
+            else
+                properties.put(API_HOST, "api.datonis.io");
+        }
 
         if (!properties.containsKey(INSTRUCTION_POOL_SIZE)) {
             properties.put(INSTRUCTION_POOL_SIZE, (long)5);
