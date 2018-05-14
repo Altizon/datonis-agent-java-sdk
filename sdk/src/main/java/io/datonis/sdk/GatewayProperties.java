@@ -114,7 +114,7 @@ public final class GatewayProperties {
         if (!properties.containsKey(API_HOST)) {
             if (properties.get(PROTOCOL).equals("mqtt") || properties.get(PROTOCOL).equals("mqtts")) {
                 logger.info("MQTT PROTOCOL connecting to mqttbroker");
-                properties.put(API_HOST, "mqtt-broker.datonis.io");
+                properties.put(API_HOST, "telemetry.datonis.io");
             }
             else
                 properties.put(API_HOST, "api.datonis.io");
