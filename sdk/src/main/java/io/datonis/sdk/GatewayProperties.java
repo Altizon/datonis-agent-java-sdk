@@ -56,7 +56,6 @@ public final class GatewayProperties {
         try {
             logger.info("Loading Config File ");
             loadProperties();
-            logger.info("MQTT host is " + properties.get(API_HOST));
         } catch (Exception e) {
             String message = "Unable to load the agent configurations file.\nPlease ensure that the datonis-edge.properties file exists in the root or is of the correct format.\nYou can also pass a JVM parameter -Ddatonis-edge.properties to point to a valid properties file";
             logger.error(message, e);
@@ -113,7 +112,7 @@ public final class GatewayProperties {
 
         if (!properties.containsKey(API_HOST)) {
             if (properties.get(PROTOCOL).equals("mqtt") || properties.get(PROTOCOL).equals("mqtts")) {
-                logger.info("MQTT PROTOCOL connecting to mqttbroker");
+                logger.info("Using MQTT protocol for communication with the platform");
                 properties.put(API_HOST, "telemetry.datonis.io");
             }
             else
