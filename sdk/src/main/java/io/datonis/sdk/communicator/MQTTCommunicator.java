@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Communicator that sends data using the MQTT protocol to the Datonis platform
- * 
+ *
  * @author Ranjit Nair (ranjit@altizon.com)
  * @author Rajesh Jangam (rajesh@altizon.com)
  */
@@ -94,6 +94,8 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
     private JSONParser parser = new JSONParser();
 
     private volatile boolean connected = false;
+
+    private volatile boolean authorised;
 
     public MQTTCommunicator(EdgeGateway gateway, int timeout, String brokerHost, boolean secure,
             Long port) {
@@ -157,13 +159,17 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(true);
             connOpts.setConnectionTimeout(timeout);
+            connOpts.setUserName(gateway.getAccessKey());
+            connOpts.setPassword(MessageUtils.encode(this.gateway.getSecretKey(),this.gateway.getAccessKey()).toCharArray());
             mqttClient.connect(connOpts);
             mqttClient.setCallback(this);
             subscribeForHttpAck(clientId);
             logger.info("Connected to the MQTT Broker");
             connected = true;
+            authorised = true;
         } catch (MqttSecurityException ex) {
-            logger.error("Could not connect to the MQTT broker due to a permissions issue", ex);
+            logger.error("Could not connect to the MQTT broker due to a permissions issue, Please check access key and secret key", ex);
+            authorised = false;
             return UNAUTHORIZED;
         } catch (Exception ex) {
             logger.error("Could not connect to the MQTT broker.", ex);
@@ -175,6 +181,11 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
     private int postRequest(int dataType, JSONObject data, boolean compress) {
         if (data == null) {
             return INVALID_PARAMS;
+        }
+
+        if(!authorised) {
+            logger.error("Unauthorised , Please check access key and secret key");
+            return UNAUTHORIZED;
         }
 
         String topic = topicMap.get(dataType);
@@ -311,6 +322,7 @@ public class MQTTCommunicator implements EdgeCommunicator, MqttCallback {
                     "Connection to the MQTT server is lost. Attempting to connect again...");
             retval = connect();
             if (retval == OK) {
+                authorised = true;
                 subscribedForInstructions.clear();
                 for (Entry<String, Set<String>> entry : thingKeys.entrySet()) {
                     for (String thingKey : entry.getValue()) {
