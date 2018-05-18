@@ -415,6 +415,10 @@ public class EdgeGateway {
         return communicator.transmit(d);
     }
 
+    public int transmitDataSynchronously(Collection<DataMessage> messages, Boolean isCompressed) {
+        return communicator.transmit(new BulkDataMessage(messages, isCompressed));
+    }
+
     /**
      * Transmit the data over the wire. The data is in the form of a JSON object
      * with key value pairs.
