@@ -408,6 +408,13 @@ public class EdgeGateway {
         return transmit(thing, d, dataQueue);
     }
     
+    public int transmitDataSynchronously(Thing thing, JSONObject data, JSONArray waypoint, long timestamp, Boolean isCompressed) {
+        DataMessage d = new DataMessage((thing == null ? "" : thing.getKey()), isAliasMode, timestamp, data, waypoint, isCompressed);
+        d.setAccessKey(thing.getAccessKey());
+        d.setSecretKey(thing.getSecretKey());
+        return communicator.transmit(d);
+    }
+
     /**
      * Transmit the data over the wire. The data is in the form of a JSON object
      * with key value pairs.
@@ -421,6 +428,10 @@ public class EdgeGateway {
 
     public boolean transmitCompressedData(Thing thing, JSONObject data, JSONArray waypoint) throws IllegalThingException {
         return transmitData(thing, data, waypoint, System.currentTimeMillis(), true);
+    }
+
+    public int transmitAlertSynchronously(String alertKey, String thingKey, AlertType alertType, String message, JSONObject data, long timestamp) {
+       return communicator.transmit(new AlertMessage(alertKey, thingKey, isAliasMode, alertType, message, data));
     }
 
     public boolean transmitAlert(String alertKey, String thingKey, AlertType alertType, String message, JSONObject data, long timestamp) {
