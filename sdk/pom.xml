@@ -10,7 +10,7 @@
   <repositories>
     <repository>
       <id>spring-milestones</id>
-      <url>http://repo.spring.io/plugins-release</url>
+      <url>https://repo.spring.io/plugins-release</url>
     </repository>
   </repositories>
   <dependencies>
